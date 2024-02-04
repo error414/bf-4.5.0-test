@@ -150,6 +150,10 @@
 #define SYM_MPS                     0x9F
 #define SYM_FTPS                    0x99
 
+// AAT Telemetry
+#define SYM_TELEMETRY_0             0x79 //black
+#define SYM_TELEMETRY_1             0x12 //white
+
 // Menu cursor
 #define SYM_CURSOR                  SYM_AH_LEFT
 

@@ -131,9 +131,9 @@ CI_TARGETS       := $(BASE_TARGETS) $(filter CRAZYBEEF4SX1280 CRAZYBEEF4FR IFLIG
 include $(ROOT)/src/main/target/$(TARGET)/target.mk
 
 REVISION := norevision
-ifeq ($(shell git diff --shortstat),)
-REVISION := $(shell git log -1 --format="%h")
-endif
+#ifeq ($(shell git diff --shortstat),)
+#REVISION := $(shell git log -1 --format="%h")
+#endif
 
 LD_FLAGS        :=
 EXTRA_LD_FLAGS  :=

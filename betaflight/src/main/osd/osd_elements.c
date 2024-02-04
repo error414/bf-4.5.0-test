@@ -395,6 +395,68 @@ static void osdFormatCoordinate(char *buff, gpsCoordinateType_e coordinateType, 
         break;
     }
 }
+
+static uint16_t osdAATTelemetry_CRC(uint8_t data, uint16_t crcAccum)
+{
+    uint8_t tmp;
+    tmp = data ^ (uint8_t)(crcAccum & 0xff);
+    tmp ^= (tmp << 4);
+    crcAccum = (crcAccum >> 8) ^ (tmp << 8) ^ (tmp << 3) ^ (tmp >> 4);
+    return crcAccum;
+}
+
+static void osdDrawAATTelemetry(displayPort_t *osdDisplayPort)
+{
+    uint32_t trk_data;
+    uint16_t trk_crc = 0;
+    static int16_t trk_elevation  = 127;
+    static uint16_t trk_bearing   = 0;
+    char trk_buffer[31];
+    if (ARMING_FLAG(ARMED)) {
+        if (STATE(GPS_FIX)){
+            if (GPS_distanceToHome > 5) {
+                trk_bearing = GPS_directionToHome;
+                trk_bearing += 360 + 180;
+                trk_bearing %= 360;
+                int32_t alt = osdGetMetersToSelectedUnit(getEstimatedAltitudeCm()) / 10;
+                float at = atan2(alt, GPS_distanceToHome);
+                trk_elevation = (float)at * 57.2957795; // 57.2957795 = 1 rad
+                trk_elevation += 37; // because elevation in telemetry should be from -37 to 90
+                if (trk_elevation < 0) {
+                    trk_elevation = 0;
+                }
+            }
+        }
+        else
+        {
+            trk_elevation = 127;
+            trk_bearing   = 0;
+        }
+    }
+
+    trk_data = 0;                                                   // bit? 0    - packet type 0 = bearing/elevation, 1 = 2 byte data packet
+    trk_data = trk_data | (uint32_t)(0x7F & trk_elevation) << 1;    // bits 1-7  - elevation angle to target. NOTE uint8 is abused. constrained value of -37 to 90 sent as 0 to 127.
+    trk_data = trk_data | (uint32_t)trk_bearing << 8;               // bits 8-17 - bearing angle to target. 0 = true north. 0 to 360
+    trk_crc = osdAATTelemetry_CRC(0xFF & trk_data, trk_crc);        // CRC First Byte? bits 0-7
+    trk_crc = osdAATTelemetry_CRC(0xFF & trk_bearing, trk_crc);     // CRC Second Byte bits 8-15
+    trk_crc = osdAATTelemetry_CRC(trk_bearing >> 8, trk_crc);       // CRC Third Byte? bits? 16-17
+    trk_data = trk_data | (uint32_t)trk_crc << 17;                  // bits 18-29 CRC & 0x3FFFF
+    for (uint8_t t_ctr = 0; t_ctr < 30; t_ctr++) { // Prepare screen buffer and write data line. Big Endian
+        if (trk_data & (uint32_t)1 << t_ctr){
+            trk_buffer[29 - t_ctr] = SYM_TELEMETRY_0;
+        }
+        else
+        {
+            trk_buffer[29 - t_ctr] = SYM_TELEMETRY_1;
+        }
+    }
+    trk_buffer[30] = 0;
+    displayWrite(osdDisplayPort, 0, 0, DISPLAYPORT_ATTR_NONE, trk_buffer);
+
+    if (osdConfig()->osd_telemetry > 1){
+        displayWrite(osdDisplayPort, 0, 3, DISPLAYPORT_ATTR_NONE, trk_buffer);               // Test display because normal telemetry line is not visible
+    }
+}
 #endif // USE_GPS
 
 void osdFormatDistanceString(char *ptr, int distance, char leadingSymbol)
@@ -2167,6 +2229,12 @@ void osdDrawSpec(displayPort_t *osdDisplayPort)
         len = strlen(FC_VERSION_STRING);
         displayWrite(osdDisplayPort, midCol - len/2, currentRow++, DISPLAYPORT_SEVERITY_NORMAL, FC_VERSION_STRING);
     }
+
+    #ifdef USE_GPS
+    if (osdConfig()->osd_telemetry > 0){
+        osdDrawAATTelemetry(osdDisplayPort);
+    }
+    #endif // USE_GPS
 }
 #endif // USE_SPEC_PREARM_SCREEN
 

@@ -644,6 +644,7 @@ const lookupTableEntry_t lookupTables[] = {
 
 #ifdef USE_OSD
     LOOKUP_TABLE_ENTRY(lookupTableOsdLogoOnArming),
+    LOOKUP_TABLE_ENTRY(lookupTableOsdTelemetry),
 #endif
     LOOKUP_TABLE_ENTRY(lookupTableMixerType),
     LOOKUP_TABLE_ENTRY(lookupTableSimplifiedTuningPidsMode),
@@ -1068,6 +1069,9 @@ const clivalue_t valueTable[] = {
 #ifdef USE_MAG
     { PARAM_NAME_GPS_RESCUE_USE_MAG,         VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, useMag) },
 #endif // USE_MAG
+#ifdef USE_OSD
+	{ "osd_telemetry",             VAR_UINT8 | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OSD_TELEMETRY }, PG_OSD_CONFIG, offsetof(osdConfig_t, osd_telemetry) },
+#endif
 #endif // USE_GPS_RESCUE
 
 #ifdef USE_GPS_LAP_TIMER

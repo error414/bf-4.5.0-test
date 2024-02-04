@@ -354,6 +354,7 @@ typedef struct osdConfig_s {
 #ifdef USE_SPEC_PREARM_SCREEN
     uint8_t osd_show_spec_prearm;
 #endif // USE_SPEC_PREARM_SCREEN
+    uint8_t osd_telemetry;                    // Display video antenna tracking telemetry if enabled
 } osdConfig_t;
 
 PG_DECLARE(osdConfig_t, osdConfig);
